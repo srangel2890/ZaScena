@@ -2,7 +2,7 @@
 module Api
   module V1
     class EventsController < ApplicationController
-      before_action :authenticate_user!
+      before_action :authenticate_user!, except: [:index, :show]
       
       def index
         events = Event.includes(:venue, :ticket_types)

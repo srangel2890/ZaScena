@@ -1,0 +1,2 @@
+class InsufficientInventoryError < ApplicationError
+end
