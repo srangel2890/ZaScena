@@ -44,69 +44,7 @@ module Api
           }, status: :unprocessable_entity
         end
 
-        event = Event.find(reservation_params[:event_id])
-
-        ticket_types = tickets_params.map do |ticket|
-          TicketType.find(ticket[:ticket_type_id])
-        end
-
-        ticket_type_counts = ticket_types.tally
-
-        unless ticket_types.all? { |ticket_type| ticket_type.event_id == event.id }
-          return render json: {
-            error: "Invalid ticket type for this event"
-          }, status: :unprocessable_entity
-        end
-
-        reservation = nil
-
-        ActiveRecord::Base.transaction do
-          # Lock rows in a consistent order to reduce deadlock risk
-          locked_ticket_types = TicketType
-            .where(id: ticket_type_counts.keys.map(&:id))
-            .order(:id)
-            .lock("FOR UPDATE")
-            .index_by(&:id)
-
-          # Validate inventory after acquiring the locks
-          ticket_type_counts.each do |ticket_type, requested_quantity|
-            available = locked_ticket_types.fetch(ticket_type.id)
-
-            if requested_quantity > available.quantity
-              raise InsufficientInventoryError,
-                    "Not enough tickets available for #{available.name}"
-            end
-          end
-
-          total = ticket_type_counts.sum do |ticket_type, quantity|
-            locked_ticket_types.fetch(ticket_type.id).price * quantity
-          end
-
-          reservation = Reservation.create!(
-            user: current_user,
-            event: event,
-            status: "confirmed",
-            total: total,
-            confirmation_code: SecureRandom.hex(6)
-          )
-
-          tickets_params.each do |ticket|
-            reservation.tickets.create!(
-              ticket_type_id: ticket[:ticket_type_id],
-              attendee_name: ticket[:attendee_name],
-              attendee_email: ticket[:attendee_email],
-              code: SecureRandom.hex(8)
-            )
-          end
-
-          ticket_type_counts.each do |ticket_type, requested_quantity|
-            locked_ticket_type = locked_ticket_types.fetch(ticket_type.id)
-
-            locked_ticket_type.update!(
-              quantity: locked_ticket_type.quantity - requested_quantity
-            )
-          end
-        end
+        reservation = Reservation.create_from_hash(reservation_params, tickets_params, current_user)
 
         if reservation.nil?
           return render json: {
@@ -123,6 +61,10 @@ module Api
       rescue InsufficientInventoryError => e
         render json: { error: e.message },
          status: :unprocessable_entity
+      rescue InvalidTicketTypeError => e
+        render json: {
+            error: "Invalid ticket type for this event"
+          }, status: :unprocessable_entity
       end
 
       private

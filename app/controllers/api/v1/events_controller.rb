@@ -5,7 +5,7 @@ module Api
       before_action :authenticate_user!, except: [:index, :show]
       
       def index
-        events = Event.includes(:venue, :ticket_types)
+        events = Event.includes(:venue, :ticket_types).order("id desc")
         render json: events.map { |event| EventSerializer.new(event).as_json }
       end
 

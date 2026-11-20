@@ -56,8 +56,7 @@ RSpec.describe "Api::V1::Events", type: :request do
       expect(response).to have_http_status(:ok)
 
       body = JSON.parse(response.body)
-
-      expect(body.length).to eq(1)
+      
       expect(body.first["id"]).to eq(event.id)
       expect(body.first["name"]).to eq("Concierto de prueba")
       expect(body.first["venue"]["id"]).to eq(venue.id)

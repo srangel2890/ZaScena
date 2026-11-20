@@ -6,7 +6,7 @@ RSpec.describe "Concurrent reservations", type: :request do
 
   let!(:user) do
     User.create!(
-      email: "concurrency@example.com",
+      email: "concurrency-test@example.com",
       name: "Concurrency Tester",
       password: "password123",
       password_confirmation: "password123"
@@ -38,10 +38,10 @@ RSpec.describe "Concurrent reservations", type: :request do
   after do
     Ticket.where(ticket_type_id: ticket_type.id).delete_all
     Reservation.where(event_id: event.id).delete_all
+    User.find_by(email: 'concurrency-test@example.com').destroy
     ticket_type.destroy!
     event.destroy!
     venue.destroy!
-    user.destroy!
   end
 
   it "does not oversell the last available ticket" do
