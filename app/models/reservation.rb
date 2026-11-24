@@ -6,6 +6,8 @@ class Reservation < ApplicationRecord
 
   validates :status, presence: true
   validates :confirmation_code, presence: true, uniqueness: true
+
+  scope :by_user, ->(user) { where(user_id: user.id) }
   
   def self.create_from_hash(reservation_params, tickets_params, user)
     event = Event.find(reservation_params[:event_id])

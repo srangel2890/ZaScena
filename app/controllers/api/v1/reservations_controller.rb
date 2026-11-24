@@ -67,6 +67,12 @@ module Api
           }, status: :unprocessable_entity
       end
 
+     def by_user
+      user = User.find_by(id: params[:user_id])
+      reservations = Reservation.by_user(user) if user
+      render json: reservations
+     end
+
       private
 
       def reservation_params
