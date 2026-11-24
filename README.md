@@ -1,4 +1,4 @@
-# Booking API
+# ZaScena API
 
 A REST API for event booking built with Ruby on Rails.
 
